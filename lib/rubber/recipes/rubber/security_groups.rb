@@ -13,7 +13,7 @@ namespace :rubber do
     Describes the network security groups
   DESC
   required_task :describe_security_groups do
-    groups = cloud.describe_security_groups()
+    groups = cloud.describe_security_groups(nil, rubber_env.cloud_providers.aws.vpc_id)
     groups.each do |group|
       puts "#{group[:name]}, #{group[:description]}"
       group[:permissions].each do |perm|
@@ -99,7 +99,8 @@ namespace :rubber do
     group_keys = groups.keys.clone()
     
     # For each group that does already exist in cloud
-    cloud_groups = cloud.describe_security_groups()
+    cloud_groups = cloud.describe_security_groups(nil, rubber_env.cloud_providers.aws.vpc_id)
+
     cloud_groups.each do |cloud_group|
       group_name = cloud_group[:name]
 
@@ -145,10 +146,10 @@ namespace :rubber do
             if answer =~ /^y/
               rule_map = Rubber::Util::symbolize_keys(rule_map)
               if rule_map[:source_group_name]
-                cloud.remove_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]})
+                cloud.remove_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]}, rubber_env.cloud_providers.aws.vpc_id)
               else
                 rule_map[:source_ips].each do |source_ip|
-                  cloud.remove_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip)
+                  cloud.remove_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip, rubber_env.cloud_providers.aws.vpc_id)
                 end if rule_map[:source_ips]
               end
             end
@@ -160,10 +161,10 @@ namespace :rubber do
           logger.debug "Missing rule, creating: #{rule_map.inspect}"
           rule_map = Rubber::Util::symbolize_keys(rule_map)
           if rule_map[:source_group_name]
-            cloud.add_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]})
+            cloud.add_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]}, rubber_env.cloud_providers.aws.vpc_id)
           else
             rule_map[:source_ips].each do |source_ip|
-              cloud.add_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip)
+              cloud.add_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip, rubber_env.cloud_providers.aws.vpc_id)
             end if rule_map[:source_ips]
           end
         end
@@ -176,7 +177,7 @@ namespace :rubber do
         else
           logger.debug(msg)
         end
-        cloud.destroy_security_group(group_name) if answer =~ /^y/
+        cloud.destroy_security_group(group_name, rubber_env.cloud_providers.aws.vpc_id) if answer =~ /^y/
       end
     end
 
@@ -191,10 +192,10 @@ namespace :rubber do
         logger.debug "Creating new rule: #{rule_map.inspect}"
         rule_map = Rubber::Util::symbolize_keys(rule_map)
         if rule_map[:source_group_name]
-          cloud.add_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]})
+          cloud.add_security_group_rule(group_name, nil, nil, nil, {:name => rule_map[:source_group_name], :account => rule_map[:source_group_account]}, rubber_env.cloud_providers.aws.vpc_id)
         else
           rule_map[:source_ips].each do |source_ip|
-            cloud.add_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip)
+            cloud.add_security_group_rule(group_name, rule_map[:protocol], rule_map[:from_port], rule_map[:to_port], source_ip, rubber_env.cloud_providers.aws.vpc_id)
           end if rule_map[:source_ips]
         end
       end
